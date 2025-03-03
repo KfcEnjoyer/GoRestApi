@@ -1,0 +1,10 @@
+{
+ "test": [
+  {
+   "Method": "POST",
+   "URL": "https://postman-echo.com/post",
+   "Headers": null,
+   "Body": "{\"name\":\"Aliya\"}"
+  }
+ ]
+}
