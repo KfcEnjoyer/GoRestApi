@@ -2,6 +2,7 @@ package setup
 
 import (
 	"fmt"
+	"log"
 	"os"
 	"path/filepath"
 )
@@ -19,7 +20,9 @@ func EnsureDirectoriesAndFiles() {
 	for _, dir := range directories {
 		path := filepath.Join(basePath, dir)
 		if _, err := os.Stat(path); os.IsNotExist(err) {
-			os.MkdirAll(path, os.ModePerm)
+			if err := os.MkdirAll(path, os.ModePerm); err != nil {
+				log.Println(err)
+			}
 			fmt.Println("Path created")
 		}
 	}
@@ -27,7 +30,9 @@ func EnsureDirectoriesAndFiles() {
 	for filePath, contend := range defaultFiles {
 		fullPath := filepath.Join(basePath, filePath)
 		if _, err := os.Stat(fullPath); os.IsNotExist(err) {
-			os.WriteFile(fullPath, []byte(contend), 0644)
+			if err := os.WriteFile(fullPath, []byte(contend), 0644); err != nil {
+				log.Println(err)
+			}
 		}
 	}
 }
