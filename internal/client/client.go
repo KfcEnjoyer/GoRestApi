@@ -37,8 +37,6 @@ func (c *Client) FormatResponse(resp *http.Response) *api.Res {
 		fmt.Println(err)
 	}
 
-	fmt.Println(string(read))
-
 	r := api.NewResponse(resp.StatusCode, resp.Header, string(read))
 
 	return r
