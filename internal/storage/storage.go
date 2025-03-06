@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"log"
 	"os"
 	"path/filepath"
 )
@@ -15,12 +16,16 @@ var savedReq = make(map[string][]api.Req)
 func EnsureFile() {
 	saveDir := filepath.Dir(SaveFilePath)
 	if _, err := os.Stat(saveDir); os.IsNotExist(err) {
-		os.MkdirAll(saveDir, os.ModePerm)
+		if err := os.MkdirAll(saveDir, os.ModePerm); err != nil {
+			log.Println(err)
+		}
 		fmt.Println("Path created")
 	}
 
 	if _, err := os.Stat(SaveFilePath); os.IsNotExist(err) {
-		os.WriteFile(SaveFilePath, []byte("{}"), 0644)
+		if err := os.WriteFile(SaveFilePath, []byte("{}"), 0644); err != nil {
+			log.Println(err)
+		}
 	}
 }
 
@@ -95,7 +100,7 @@ func LoadRequests() (map[string][]api.Req, error) {
 
 	var data map[string][]api.Req
 	err = json.Unmarshal(read, &data)
-	fmt.Println(data)
+
 	if err != nil {
 		return nil, err
 	}
