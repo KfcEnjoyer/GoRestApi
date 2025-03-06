@@ -49,7 +49,6 @@ func SaveRequest(name string, req api.Req) error {
 		return err
 	}
 
-	fmt.Println("request saved ")
 	return nil
 }
 
@@ -86,7 +85,6 @@ func DeleteRequest(name string, index int) error {
 		return err
 	}
 
-	fmt.Println("request deleted")
 	return nil
 }
 
