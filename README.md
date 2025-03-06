@@ -46,6 +46,8 @@ go build -o myapp
 5. Send the Request: Click on "Send" to make the API call and view the response.
 6. Save Requests: Option to save requests for later use.
 
+![til](./assets/ex1.gif)
+
 # Contributing
 I welcome contributions! If you find a bug or want to add a new feature, feel free to create an issue or submit a pull request.
 
