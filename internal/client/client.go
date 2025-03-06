@@ -22,7 +22,7 @@ func SendReq(r api.Req) (*http.Response, error) {
 	}
 	req, err := http.NewRequest(r.Method, r.URL, bodyReader)
 	if err != nil {
-		fmt.Println(err)
+		return nil, err
 	}
 
 	cli := &http.Client{}
