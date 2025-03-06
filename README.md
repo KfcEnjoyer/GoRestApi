@@ -1,3 +1,5 @@
+![til](./assets/gorest.png)
+
 # About 
 A simple desktop application with a GUI that allows users to send HTTP requests to APIs, similar to Postman. This app supports various request methods and now it supports only JSON format but I will add other formats in the future, also allows you to manage and save requests for easy reuse.
 This tool will act as Postman API without a need to log in 
@@ -45,6 +47,8 @@ go build -o myapp
 4. Enter Request Body: Input data in JSON format.
 5. Send the Request: Click on "Send" to make the API call and view the response.
 6. Save Requests: Option to save requests for later use.
+
+![til](./assets/ex1.gif)
 
 # Contributing
 I welcome contributions! If you find a bug or want to add a new feature, feel free to create an issue or submit a pull request.
