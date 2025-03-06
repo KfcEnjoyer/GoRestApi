@@ -4,6 +4,8 @@ import (
 	"GoRestApi/internal/api"
 	"GoRestApi/internal/client"
 	"GoRestApi/internal/storage"
+	"bytes"
+	"encoding/json"
 	"fmt"
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
@@ -22,9 +24,9 @@ type Window struct {
 	methodEntry          *widget.Select
 	urlEntry             *widget.Entry
 	bodyEntry            *widget.Entry
-	statusCodeEntry      *widget.Entry
+	statusCodeText       *canvas.Text
 	statusContainer      *fyne.Container
-	response             *widget.Entry
+	responseText         *widget.Label
 	requestNamesList     *widget.List
 	requestDetailsList   *widget.List
 	requestsData         map[string][]api.Req
@@ -40,6 +42,14 @@ func NewWindow(a fyne.App) *Window {
 		window:               a.NewWindow("API Request Tool"),
 		selectedRequestIndex: -1,
 	}
+
+	iconPath := "internal/gui/gorest.png"
+
+	icon, err := fyne.LoadResourceFromPath(iconPath)
+	if err == nil {
+		w.window.SetIcon(icon)
+	}
+
 	w.setupUI()
 	return w
 }
@@ -59,13 +69,11 @@ func (w *Window) loadSavedRequests() {
 func (w *Window) setupUI() {
 	w.loadSavedRequests()
 
-	// Create lists of request names for the sidebar
 	requestNames := make([]string, 0, len(w.requestsData))
 	for name := range w.requestsData {
 		requestNames = append(requestNames, name)
 	}
 
-	// Setup request names list with larger text
 	w.requestNamesList = widget.NewList(
 		func() int {
 			return len(requestNames)
@@ -73,7 +81,7 @@ func (w *Window) setupUI() {
 		func() fyne.CanvasObject {
 			label := widget.NewLabel("Request Name")
 			label.TextStyle = fyne.TextStyle{Bold: true}
-			// Make text bigger
+
 			label.Importance = widget.HighImportance
 			return container.NewHBox(label)
 		},
@@ -85,7 +93,6 @@ func (w *Window) setupUI() {
 		},
 	)
 
-	// Setup request details list (initially empty) with larger text
 	w.requestDetailsList = widget.NewList(
 		func() int {
 			return len(w.currentRequests)
@@ -93,7 +100,6 @@ func (w *Window) setupUI() {
 		func() fyne.CanvasObject {
 			label := widget.NewLabel("Request Details")
 			label.TextStyle = fyne.TextStyle{Bold: true}
-			// Make text bigger
 			label.Importance = widget.HighImportance
 			return container.NewHBox(label)
 		},
@@ -104,17 +110,14 @@ func (w *Window) setupUI() {
 		},
 	)
 
-	// Setup request name selection handler
 	w.requestNamesList.OnSelected = func(id widget.ListItemID) {
 		w.currentRequestName = requestNames[id]
 		w.currentRequests = w.requestsData[w.currentRequestName]
 		w.requestDetailsList.Refresh()
 
-		// Reset selection in the details list
 		w.selectedRequestIndex = -1
 	}
 
-	// Setup request detail selection handler
 	w.requestDetailsList.OnSelected = func(id widget.ListItemID) {
 		if id < len(w.currentRequests) {
 			w.selectedRequestIndex = int(id)
@@ -126,34 +129,27 @@ func (w *Window) setupUI() {
 		}
 	}
 
-	// Create field for new request name
 	w.newReqName = widget.NewEntry()
 	w.newReqName.SetPlaceHolder("New request name")
 
-	// Create button to add new request
 	addReqButton := widget.NewButton("Create New Request", func() {
 		if w.newReqName.Text != "" {
-			// Set the form with the new name
 			w.reqName.SetText(w.newReqName.Text)
 			w.methodEntry.SetSelected("GET")
 			w.urlEntry.SetText("")
 			w.bodyEntry.SetText("")
 			w.newReqName.SetText("")
 
-			// If this is a new name, refresh the list
 			if _, exists := w.requestsData[w.reqName.Text]; !exists {
 				requestNames = append(requestNames, w.reqName.Text)
 				w.requestNamesList.Refresh()
 			}
 		}
 	})
-	// Make button bigger
 	addReqButton.Importance = widget.HighImportance
 
-	// Create sidebar with two lists
 	listsSeparator := widget.NewSeparator()
 
-	// Create labels with larger text
 	collectionsLabel := widget.NewLabelWithStyle("Request Collections:", fyne.TextAlignLeading, fyne.TextStyle{Bold: true})
 	collectionsLabel.Importance = widget.HighImportance
 	requestsLabel := widget.NewLabelWithStyle("Requests in Collection:", fyne.TextAlignLeading, fyne.TextStyle{Bold: true})
@@ -164,10 +160,8 @@ func (w *Window) setupUI() {
 	namesListContainer := container.NewGridWrap(fyne.NewSize(250, 250), w.requestNamesList)
 	detailsListContainer := container.NewGridWrap(fyne.NewSize(250, 250), w.requestDetailsList)
 
-	// For the new request name entry (fixed height)
 	newReqNameContainer := container.NewGridWrap(fyne.NewSize(250, 40), w.newReqName)
 
-	// Create sidebar
 	sidebarContent := container.NewVBox(
 		collectionsLabel,
 		namesListContainer,
@@ -179,7 +173,6 @@ func (w *Window) setupUI() {
 		addReqButton,
 	)
 
-	// Setup details panel
 	nameLabel := widget.NewLabelWithStyle("Request Name:", fyne.TextAlignLeading, fyne.TextStyle{Bold: true})
 	nameLabel.Importance = widget.HighImportance
 	w.reqName = widget.NewEntry()
@@ -217,32 +210,46 @@ func (w *Window) setupUI() {
 
 	responseLabel := widget.NewLabelWithStyle("Response:", fyne.TextAlignLeading, fyne.TextStyle{Bold: true})
 	responseLabel.Importance = widget.HighImportance
-	w.response = widget.NewMultiLineEntry()
-	w.response.SetPlaceHolder("Response will appear here...")
-	w.response.Disable()
+	w.responseText = widget.NewLabel("Response will appear here...")
+	w.responseText.Wrapping = fyne.TextWrapWord
+	w.responseText.Alignment = fyne.TextAlignLeading
+	w.responseText.TextStyle = fyne.TextStyle{Monospace: true}
+
+	responseTextContainer := container.NewGridWrap(fyne.NewSize(400, 750), w.responseText)
+	responseTextContainer.Resize(fyne.NewSize(600, -1))
+
+	responseScrollContainer := container.NewVScroll(responseTextContainer)
+	responseScrollContainer.SetMinSize(fyne.NewSize(400, 600))
 
 	statusLabel := widget.NewLabelWithStyle("Status Code:", fyne.TextAlignLeading, fyne.TextStyle{Bold: true})
 	statusLabel.Importance = widget.HighImportance
 
-	w.statusCodeEntry = widget.NewEntry()
+	w.statusCodeText = canvas.NewText("", color.White)
+	w.statusCodeText.TextStyle = fyne.TextStyle{Monospace: true, Bold: true}
+	w.statusCodeText.Alignment = fyne.TextAlignLeading
 
-	w.statusContainer = container.NewStack(
-		canvas.NewRectangle(color.Transparent),
-		w.statusCodeEntry,
+	statusRect := canvas.NewRectangle(color.Transparent)
+	statusRect.SetMinSize(fyne.NewSize(600, 30))
+
+	w.statusContainer = container.NewGridWrap(fyne.NewSize(250, 20),
+		statusRect,
+		w.statusCodeText,
 	)
-	// Create fixed size containers for input fields
-	// Replace layout.NewFixedGridLayout with container.NewGridWrap
 
-	// Update other containers to use appropriate layouts
+	w.statusContainer.Resize(fyne.NewSize(600, 30))
+
+	responseContainer := container.NewVBox(
+		responseLabel,
+		w.statusContainer,
+		responseScrollContainer,
+	)
+
 	reqNameContainer := container.NewGridWrap(fyne.NewSize(600, 40), w.reqName)
 	methodContainer := container.NewGridWrap(fyne.NewSize(600, 40), w.methodEntry)
 	urlContainer := container.NewGridWrap(fyne.NewSize(600, 40), w.urlEntry)
 	bodyContainer := container.NewGridWrap(fyne.NewSize(600, 200), w.bodyEntry)
-	responseContainer := container.NewGridWrap(fyne.NewSize(600, 300), w.response)
-
 	buttonsContainer := container.NewHBox(saveReqButton, deleteReqButton, sendButton)
 
-	// Create details panel
 	w.detailsPanel = container.NewVBox(
 		nameLabel,
 		reqNameContainer,
@@ -253,19 +260,16 @@ func (w *Window) setupUI() {
 		bodyLabel,
 		bodyContainer,
 		buttonsContainer,
-		responseLabel,
-		w.statusContainer,
 		responseContainer,
 	)
 
 	detailsScroll := container.NewScroll(w.detailsPanel)
 
-	// Create split layout with sidebar and details panel
 	split := container.NewHSplit(
 		container.NewVBox(sidebarContent),
 		detailsScroll,
 	)
-	split.Offset = 0.25 // 25% of space for sidebar, 75% for details
+	split.Offset = 0.25
 
 	w.window.SetContent(split)
 	w.window.Resize(fyne.NewSize(1920, 1080))
@@ -273,16 +277,13 @@ func (w *Window) setupUI() {
 }
 
 func (w *Window) refreshRequestLists() {
-	// Reload data
 	w.loadSavedRequests()
 
-	// Rebuild request names
 	requestNames := make([]string, 0, len(w.requestsData))
 	for name := range w.requestsData {
 		requestNames = append(requestNames, name)
 	}
 
-	// Update current requests if needed
 	if w.currentRequestName != "" {
 		if reqs, exists := w.requestsData[w.currentRequestName]; exists {
 			w.currentRequests = reqs
@@ -291,7 +292,6 @@ func (w *Window) refreshRequestLists() {
 		}
 	}
 
-	// Refresh both lists
 	w.requestNamesList.Refresh()
 	w.requestDetailsList.Refresh()
 }
@@ -306,25 +306,35 @@ func (w *Window) HandleSendReq() {
 
 	res, err := client.SendReq(r)
 	if err != nil {
-		w.response.SetText(err.Error())
-		log.Println(err)
+		w.responseText.Text = err.Error()
+		w.setStatusCode(500, "Internal Error")
+		w.responseText.Refresh()
 		return
 	}
 
 	if res != nil {
 		w.setStatusCode(res.StatusCode, http.StatusText(res.StatusCode))
+
 		read, err := io.ReadAll(res.Body)
 		if err != nil {
-			w.response.SetText(err.Error())
-			log.Println(err)
+			w.responseText.SetText(err.Error())
 			return
 		}
 
-		w.response.SetText(string(read))
+		var prettyJSON bytes.Buffer
+		err = json.Indent(&prettyJSON, read, "", "  ")
+		if err != nil {
+			w.responseText.Text = string(read)
+		} else {
+			w.responseText.Text = prettyJSON.String()
+		}
+
+		w.responseText.Refresh()
 		return
 	}
 
-	w.response.SetText("No response")
+	w.responseText.Text = "No response"
+	w.responseText.Refresh()
 }
 
 func (w *Window) HandleSaveReq() {
@@ -349,21 +359,17 @@ func (w *Window) HandleSaveReq() {
 
 	dialog.ShowInformation("Success", "Request saved successfully", w.window)
 
-	// Save the current name
 	w.currentRequestName = name
 
-	// Refresh lists
 	w.refreshRequestLists()
 }
 
 func (w *Window) HandleDeleteReq() {
-	// Check if we have a selection
 	if w.currentRequestName == "" || w.selectedRequestIndex < 0 || w.selectedRequestIndex >= len(w.currentRequests) {
 		dialog.ShowInformation("Error", "Please select a request to delete", w.window)
 		return
 	}
 
-	// Confirm deletion
 	dialog.ShowConfirm("Confirm Deletion",
 		"Are you sure you want to delete this request?",
 		func(confirmed bool) {
@@ -384,21 +390,27 @@ func (w *Window) HandleDeleteReq() {
 
 func (w *Window) setStatusCode(status int, text string) {
 	var c color.Color
+	var textColor color.Color
 	switch {
 	case status >= 200 && status < 300:
-		c = color.RGBA{R: 0, G: 200, B: 0, A: 255} // Green
+		c = color.NRGBA{R: 0, G: 100, B: 0, A: 200}         // Dark green
+		textColor = color.NRGBA{R: 0, G: 255, B: 0, A: 255} // Bright green
 	case status >= 300 && status < 400:
-		c = color.NRGBA{R: 255, G: 255, B: 0, A: 255} // Yellow
+		c = color.NRGBA{R: 100, G: 100, B: 0, A: 200}         // Dark yellow
+		textColor = color.NRGBA{R: 255, G: 255, B: 0, A: 255} // Bright yellow
 	case status >= 400 && status < 600:
-		c = color.NRGBA{R: 255, G: 0, B: 0, A: 255} // Red
+		c = color.NRGBA{R: 100, G: 0, B: 0, A: 200}         // Dark red
+		textColor = color.NRGBA{R: 255, G: 0, B: 0, A: 255} // Bright red
 	default:
-		c = color.Gray{0xCC}
+		c = color.Gray{0x55} // Medium gray
+		textColor = color.White
 	}
 
-	// Update the container background
-	rect := canvas.NewRectangle(c)
-	rect.Resize(w.statusContainer.MinSize())
-	w.statusContainer.Objects[0] = rect
-	w.statusCodeEntry.SetText(fmt.Sprintf("%d %s", status, text))
-	w.statusContainer.Refresh()
+	statusRect := w.statusContainer.Objects[0].(*canvas.Rectangle)
+	statusRect.FillColor = c
+	statusRect.Refresh()
+
+	w.statusCodeText.Text = fmt.Sprintf("%d %s", status, text)
+	w.statusCodeText.Color = textColor
+	w.statusCodeText.Refresh()
 }
