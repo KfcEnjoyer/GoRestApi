@@ -5,6 +5,12 @@
    "URL": "https://postman-echo.com/post",
    "Headers": null,
    "Body": "{\"name\":\"Aliya\"}"
+  },
+  {
+   "Method": "POST",
+   "URL": "https://postman-echo.com/post",
+   "Headers": null,
+   "Body": "{\"hello\":\"api\"}"
   }
  ]
 }
