@@ -13,7 +13,7 @@ var directories = []string{"save", "logs"}
 
 var defaultFiles = map[string]string{
 	"save/save_req.json": "{}",
-	"logs/app.log":       "[]",
+	"logs/app.log":       "",
 }
 
 func EnsureDirectoriesAndFiles() {
