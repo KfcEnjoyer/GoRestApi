@@ -4,6 +4,7 @@ import (
 	"GoRestApi/internal/api"
 	"GoRestApi/internal/client"
 	"GoRestApi/internal/storage"
+	"GoRestApi/internal/utills"
 	"bytes"
 	"encoding/json"
 	"fmt"
@@ -16,6 +17,7 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"time"
 )
 
 type Window struct {
@@ -309,6 +311,13 @@ func (w *Window) HandleSendReq() {
 		w.responseText.Text = err.Error()
 		w.setStatusCode(500, "Internal Error")
 		w.responseText.Refresh()
+		utills.CreateReqLog(utills.RequestLogger{
+			Method:     r.Method,
+			Url:        r.URL,
+			Message:    "Failed to create request: " + err.Error(),
+			StatusCode: 500, // Or another appropriate code
+			TimeStamp:  time.Now().Format("2006-01-02 15:04:05"),
+		})
 		return
 	}
 
@@ -318,6 +327,13 @@ func (w *Window) HandleSendReq() {
 		read, err := io.ReadAll(res.Body)
 		if err != nil {
 			w.responseText.SetText(err.Error())
+			utills.CreateReqLog(utills.RequestLogger{
+				Method:     r.Method,
+				Url:        r.URL,
+				Message:    "Failed to create request: " + err.Error(),
+				StatusCode: 500, // Or another appropriate code
+				TimeStamp:  time.Now().Format("2006-01-02 15:04:05"),
+			})
 			return
 		}
 
@@ -325,6 +341,13 @@ func (w *Window) HandleSendReq() {
 		err = json.Indent(&prettyJSON, read, "", "  ")
 		if err != nil {
 			w.responseText.Text = string(read)
+			utills.CreateReqLog(utills.RequestLogger{
+				Method:     r.Method,
+				Url:        r.URL,
+				Message:    "Failed to create request: " + err.Error(),
+				StatusCode: 500, // Or another appropriate code
+				TimeStamp:  time.Now().Format("2006-01-02 15:04:05"),
+			})
 		} else {
 			w.responseText.Text = prettyJSON.String()
 		}
@@ -354,6 +377,10 @@ func (w *Window) HandleSaveReq() {
 	err := storage.SaveRequest(name, r)
 	if err != nil {
 		dialog.ShowError(err, w.window)
+		utills.CreateLog(utills.ErrorLogger{
+			Error:     err.Error(),
+			TimeStamp: time.Now().Format("2006-01-02 15:04:05"),
+		})
 		return
 	}
 
