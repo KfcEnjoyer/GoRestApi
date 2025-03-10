@@ -1,7 +1,6 @@
-package client
+package api
 
 import (
-	"GoRestApi/internal/api"
 	"fmt"
 	"io"
 	"net/http"
@@ -9,11 +8,11 @@ import (
 )
 
 type Client struct {
-	Req *api.Req
-	Res *api.Res
+	Req *Req
+	Res *Res
 }
 
-func SendReq(r api.Req) (*http.Response, error) {
+func SendReq(r Req) (*http.Response, error) {
 	var bodyReader io.Reader
 	if r.Body != "" {
 		bodyReader = strings.NewReader(r.Body)
@@ -29,7 +28,7 @@ func SendReq(r api.Req) (*http.Response, error) {
 	return cli.Do(req)
 }
 
-func (c *Client) FormatResponse(resp *http.Response) *api.Res {
+func (c *Client) FormatResponse(resp *http.Response) *Res {
 	defer resp.Body.Close()
 
 	read, err := io.ReadAll(resp.Body)
@@ -37,7 +36,7 @@ func (c *Client) FormatResponse(resp *http.Response) *api.Res {
 		fmt.Println(err)
 	}
 
-	r := api.NewResponse(resp.StatusCode, resp.Header, string(read))
+	r := NewResponse(resp.StatusCode, resp.Header, string(read))
 
 	return r
 }

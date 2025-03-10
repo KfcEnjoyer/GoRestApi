@@ -2,7 +2,6 @@ package gui
 
 import (
 	"GoRestApi/internal/api"
-	"GoRestApi/internal/client"
 	"GoRestApi/internal/storage"
 	"GoRestApi/internal/utills"
 	"bytes"
@@ -306,7 +305,7 @@ func (w *Window) HandleSendReq() {
 		Body:    w.bodyEntry.Text,
 	}
 
-	res, err := client.SendReq(r)
+	res, err := api.SendReq(r)
 	if err != nil {
 		w.responseText.Text = err.Error()
 		w.setStatusCode(500, "Internal Error")

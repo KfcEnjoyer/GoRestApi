@@ -12,5 +12,19 @@
    "Headers": null,
    "Body": "{\"hello\":\"api\"}"
   }
+ ],
+ "test2": [
+  {
+   "Method": "POST",
+   "URL": "https://postman-echo.com/post",
+   "Headers": null,
+   "Body": "{\"hello\":\"ap2i\"}"
+  },
+  {
+   "Method": "POST",
+   "URL": "https://postman-echo.com/post",
+   "Headers": null,
+   "Body": "{\"hello\":\"ap2i\"}"
+  }
  ]
 }

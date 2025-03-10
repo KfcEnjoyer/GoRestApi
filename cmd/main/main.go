@@ -2,14 +2,14 @@ package main
 
 import (
 	"GoRestApi/internal/gui"
-	"GoRestApi/internal/setup"
+	"GoRestApi/internal/utills"
 	"log"
 )
 
 func main() {
 	log.Println("Initializing API Request Tool...")
 
-	setup.EnsureDirectoriesAndFiles()
+	utills.EnsureDirectoriesAndFiles()
 	app := gui.New()
 
 	app.Run()
